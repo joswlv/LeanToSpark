@@ -1,13 +1,17 @@
-package driver;
+package driver.demolog;
 
 import common.DefaultSetting;
-import function.DemoFunction;
-import model.DemoInfoKey;
+import function.demolog.DemoFunction;
+import model.demolog.DemoInfoKey;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
-public class UniqCountBySubtract {
+/**
+ * Created by nhnent on 2017. 3. 27..
+ */
+public class UniqCountByCounting {
 
     private String appName;
     private String input1;
@@ -31,15 +35,18 @@ public class UniqCountBySubtract {
         SparkConf jobConf = DefaultSetting.getDefaultSparkConfig(appName,configFile);
         JavaSparkContext sc = new JavaSparkContext(jobConf);
 
-        JavaRDD<DemoInfoKey> nowRDD = sc.textFile(input1).map(DemoFunction.getRefineLogParserFunction());
-        JavaRDD<DemoInfoKey> beforeRDD = sc.textFile(input2).map(DemoFunction.getRefineLogParserFunction());
+        JavaRDD<String> nowRDD = sc.textFile(input1);
+        JavaRDD<String> beforeRDD = sc.textFile(input2);
 
-        JavaRDD<DemoInfoKey> resultRDD = nowRDD.subtract(beforeRDD);
-        System.out.println(resultRDD.take(10));
+        JavaPairRDD<DemoInfoKey,Integer> resultRDD;
+        resultRDD = nowRDD.union(beforeRDD).mapToPair(DemoFunction.getRefineLogParserPairFunction())
+                .reduceByKey(DemoFunction.getDemoCount())
+                .filter(DemoFunction.getDemoFilter());
+
         resultRDD.map(DemoFunction.getRefinePrintFunction()).saveAsTextFile(outputDir);
 
         sc.close();
     }
 
-    public static void main(String[] args) {new UniqCountBySubtract().run(args);}
+    public static void main(String[] args) {new UniqCountByCounting().run(args);}
 }

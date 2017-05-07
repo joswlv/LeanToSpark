@@ -92,4 +92,6 @@ buildNumber.properties
 # Exclude maven wrapper
 !/.mvn/wrapper/maven-wrapper.jar
 
+/*.iml
 # End of https://www.gitignore.io/api/intellij,maven,java
+/sparkTest.iml

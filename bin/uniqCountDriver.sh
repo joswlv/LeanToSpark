@@ -25,8 +25,8 @@ run() {
         echo $INPUT_PATHS
 
         appName="getDemoUniqEDIT_vol"
-        class="driver.UniqCountByCounting"
-        #class="driver.UniqCountBySubtract"
+        class="driver.demolog.UniqCountByCounting"
+        #class="driver.demolog.UniqCountBySubtract"
         runjar="./dmp-demo-targeting-java-0.0.1-jar-with-dependencies.jar"
         configFile="./configuration.properties"
         PORTVAR=$((RANDOM/100+14040))

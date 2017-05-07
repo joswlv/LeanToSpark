@@ -1,6 +1,6 @@
-package function;
+package function.demolog;
 
-import model.DemoInfoKey;
+import model.demolog.DemoInfoKey;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;

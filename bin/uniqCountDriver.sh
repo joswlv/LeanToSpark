@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 if [ "$1" ]
 then
   echo $1
@@ -27,7 +28,7 @@ run() {
         appName="getDemoUniqEDIT_vol"
         class="driver.demolog.UniqCountByCounting"
         #class="driver.demolog.UniqCountBySubtract"
-        runjar="./dmp-demo-targeting-java-0.0.1-jar-with-dependencies.jar"
+        runjar="./Spark-Test-jar-with-dependencies.jar"
         configFile="./configuration.properties"
         PORTVAR=$((RANDOM/100+14040))
 

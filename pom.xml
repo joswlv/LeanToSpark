@@ -13,7 +13,7 @@
     <properties>
         <spark.version>2.1.1</spark.version>
         <scala.version>2.11.7</scala.version>
-        <java.version>1.7</java.version>
+        <java.version>1.8</java.version>
     </properties>
 
     <dependencies>

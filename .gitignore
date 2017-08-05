@@ -95,3 +95,5 @@ buildNumber.properties
 /*.iml
 # End of https://www.gitignore.io/api/intellij,maven,java
 /sparkTest.iml
+/bin/spark-warehouse/
+/.idea/

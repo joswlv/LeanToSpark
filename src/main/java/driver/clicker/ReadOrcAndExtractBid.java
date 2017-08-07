@@ -4,7 +4,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.sql.Dataset;
@@ -28,26 +27,25 @@ public class ReadOrcAndExtractBid {
 				.builder()
 				.appName("ReadOrcAndExtractBidFromDsp")
 				.getOrCreate();
+		spark.sqlContext().udf().register("getValue", new DspLogParser(), DataTypes.StringType);
+		List<String> resultDates = getAllDate(period);
 
-		spark.udf().register("getValue", new DspLogParser(), DataTypes.StringType);
-		List<JavaRDD<String>> datasets = getAllDataSet(period, spark);
-		JavaPairRDD<String, String> resultData = null;
+		JavaPairRDD<String,String> bidAndCustomCode = null;
+		for (String date : resultDates){
+			Dataset<Row> ds = spark.read()
+					.orc("/user/irteam/addinfra/adxdsp/dt=" + date + "/*/type=c/*");
+			ds.createOrReplaceTempView("dsplog"+date);
 
-		for (JavaRDD<String> resultBid : datasets) {
-			resultBid.mapToPair(new PairFunction<String, String, String>() {
-				@Override
-				public Tuple2<String, String> call(String s) throws Exception {
-					return new Tuple2<>(s, "CUT102");
-				}
-			}).union(resultData);
+			spark.sqlContext().sql("select getValue(c3,\'&\',\'dmp\') from dsplog"+date).toJavaRDD()
+					.mapToPair((PairFunction<Row, String, String>) row -> new Tuple2<>(row.getString(0),"CST101")).union(bidAndCustomCode);
 		}
-		resultData.map(new Function<Tuple2<String,String>, String>() {
-			@Override
-			public String call(Tuple2<String, String> tuple2) throws Exception {
-				return String.format("%s\t%d", tuple2._1(), tuple2._2());
-			}
-		}).repartition(5).saveAsTextFile("/user/irteam/swjo/clicker/");
 
+		try {
+			bidAndCustomCode.map((Function<Tuple2<String, String>, String>) tuple2 -> String.format("%s\t%s", tuple2._1(), tuple2._2()))
+					.saveAsTextFile("/user/irteam/swjo/clicker/");
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static List<String> getDate(final String period) {
@@ -61,30 +59,17 @@ public class ReadOrcAndExtractBid {
 		return resultDate;
 	}
 
-	public static List<JavaRDD<String>> getAllDataSet(final String period, SparkSession spark) throws IOException {
-		List<JavaRDD<String>> resultJavaRDD = new ArrayList<>();
+	public static List<String> getAllDate(final String period) throws IOException {
+		List<String> resultDate = new ArrayList<>();
 		getDate(period).stream().filter(date -> {
-			String src = "/user/irteam/addinfra/adxdsp/dt=" + date + "/*/type=c";
+			String src = "/user/irteam/addinfra/adxdsp/dt=" + date + "/*/type=c/*";
 			try {
 				return FileSystem.get(new Configuration()).exists(new Path(src));
 			} catch (IOException e) {
 				return false;
 			}
-		}).forEach(date -> {
-			Dataset<Row> ds = spark.read()
-					.orc("/user/irteam/addinfra/adxdsp/dt=" + date + "/*/type=c");
-			ds.createOrReplaceTempView("dsplog");
-			resultJavaRDD.add(ds.sqlContext()
-					.sql("SELECT getValue(c3,&,dmp) from dsplog")
-					.toJavaRDD().map(new Function<Row, String>() {
-						@Override
-						public String call(Row row) throws Exception {
-							return row.toString();
-						}
-					})
-				);
-		});
-		return resultJavaRDD;
+		}).forEach(date -> resultDate.add(date));
+		return resultDate;
 	}
 
 	public static void main(String[] args) throws IOException {
